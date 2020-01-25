@@ -2,15 +2,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 
-public class PPC extends JPanel implements MouseListener {
+public class PPC extends JPanel implements MouseListener, MouseMotionListener {
     private JFrame frame;
     static PPC ppc = new PPC();
 
     public static final int BORDER_OFFSET = 100;
-    public static final int WINDOW_WIDTH = 750;
-    public static final int WINDOW_HEIGHT = 750;
-    public static final int PPC_LENGTH = 450;
+    public static final int WINDOW_WIDTH = 1000;
+    public static final int WINDOW_HEIGHT = 1000;
+    public static final int PPC_LENGTH = 600;
 
     public int x = 500;
     public int y = 500;
@@ -23,31 +24,18 @@ public class PPC extends JPanel implements MouseListener {
 
         frame.add(this);
         frame.addMouseListener(this);
+        frame.addMouseMotionListener(this);
         frame.pack();
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        drawAxes(g);
-        drawCurve(g);
-        drawPointer(g);
-        repaint();
-    }
 
-    public void drawCurve(Graphics g) { //curve will intersect at (0, 400) and (400, 0)
-        /*//REFERENCE LINES FOR WHERE CURVE NEEDS TO BE
-        g.setColor(Color.RED);
-        g.drawLine(100, 650, 100, 200);
-        g.drawLine(100, 650, 550, 650);
-        g.setColor(Color.BLACK);*/
-
-        // g.drawArc(100, WINDOW_HEIGHT - 500, 400, 400, 0, 360);
-        /*g.drawArc(BORDER_OFFSET - PPC_LENGTH, WINDOW_HEIGHT - (BORDER_OFFSET + PPC_LENGTH),  //TODO: correct arc, but too complex for now
-                PPC_LENGTH * 2, PPC_LENGTH * 2, 0, 90);*/
-        g.drawLine(BORDER_OFFSET, WINDOW_HEIGHT - (BORDER_OFFSET + PPC_LENGTH),
-                BORDER_OFFSET + PPC_LENGTH, WINDOW_HEIGHT - BORDER_OFFSET);
+    public void drawCurve(Graphics g) {
+        g.drawArc(BORDER_OFFSET - PPC_LENGTH, WINDOW_HEIGHT - (BORDER_OFFSET + PPC_LENGTH),  //TODO: correct arc, but too complex for now
+                PPC_LENGTH * 2, PPC_LENGTH * 2, 0, 90);
+        /*g.drawLine(BORDER_OFFSET, WINDOW_HEIGHT - (BORDER_OFFSET + PPC_LENGTH),
+                BORDER_OFFSET + PPC_LENGTH, WINDOW_HEIGHT - BORDER_OFFSET);*/
     }
 
     public void drawAxes(Graphics g) {
@@ -60,14 +48,43 @@ public class PPC extends JPanel implements MouseListener {
     }
 
     public void drawPointer(Graphics g) {
-        g.setColor(Color.RED);
-        for (int i = 0; i <= 1; i++) {
-            g.drawLine(x + i, y, x + 5 + i, y + 5);
-            g.drawLine(x + i, y, x + 5 + i, y - 5);
-            g.drawLine(x + i, y, x - 5 + i, y + 5);
-            g.drawLine(x + i, y, x - 5 + i, y - 5);
+        int x = this.x;
+        int y = WINDOW_HEIGHT - this.y;
+
+        if (BORDER_OFFSET <= x && x <= WINDOW_WIDTH - BORDER_OFFSET
+            && BORDER_OFFSET <= y && y <= WINDOW_HEIGHT - BORDER_OFFSET) {
+            double theta;
+            //calculate the angle of the point clicked (arctan) & select the point on the circle with that angle
+            x -= BORDER_OFFSET;
+            y -= BORDER_OFFSET;
+            if (x > 0) {  //if theta != 90
+                theta = Math.atan((double) y / x);
+            } else {
+                theta = Math.PI / 2;
+            }
+            /*System.out.println("x: " + x);
+            System.out.println("y: " + y);
+            System.out.println("theta: " + theta * 180 / Math.PI);*/
+            x = (int) (PPC_LENGTH * Math.cos(theta) + BORDER_OFFSET);
+            y = (int) (PPC_LENGTH * Math.sin(theta) + BORDER_OFFSET);
+
+            g.setColor(Color.RED);
+            for (int i = 0; i <= 1; i++) {
+                g.drawLine(x + i, WINDOW_HEIGHT - y, x + 5 + i, WINDOW_HEIGHT - y + 5);
+                g.drawLine(x + i, WINDOW_HEIGHT - y, x + 5 + i, WINDOW_HEIGHT - y - 5);
+                g.drawLine(x + i, WINDOW_HEIGHT - y, x - 5 + i, WINDOW_HEIGHT - y + 5);
+                g.drawLine(x + i, WINDOW_HEIGHT - y, x - 5 + i, WINDOW_HEIGHT - y - 5);
+            }
+            g.setColor(Color.BLACK);
         }
-        g.setColor(Color.BLACK);
+    }
+
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        drawAxes(g);
+        drawCurve(g);
+        drawPointer(g);
+        repaint();
     }
 
     public static void main(String[] args) {
@@ -76,10 +93,14 @@ public class PPC extends JPanel implements MouseListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        System.out.println("HERE");
+
         x = e.getX() - 8;
         y = e.getY() - 31;
-        System.out.println("(" + x + ", " + y + ")");
+        //to clip the value
+        x = Math.max(BORDER_OFFSET, Math.min(WINDOW_WIDTH - BORDER_OFFSET, x));
+        y = Math.max(BORDER_OFFSET, Math.min(WINDOW_WIDTH - BORDER_OFFSET, y));
+
+        //System.out.println("(" + x + ", " + y + ")");
         ppc.repaint();
     }
 
@@ -100,6 +121,22 @@ public class PPC extends JPanel implements MouseListener {
 
     @Override
     public void mouseExited(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        x = e.getX() - 8;
+        y = e.getY() - 31;
+        //to clip the value
+        x = Math.max(BORDER_OFFSET, Math.min(WINDOW_WIDTH - BORDER_OFFSET, x));
+        y = Math.max(BORDER_OFFSET, Math.min(WINDOW_WIDTH - BORDER_OFFSET, y));
+        //System.out.println("(" + x + ", " + y + ")");
+        ppc.repaint();
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
 
     }
 }

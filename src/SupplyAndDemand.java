@@ -31,7 +31,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     public static final int WINDOW_HEIGHT = 1000;
 
     public SupplyAndDemand() {
-        frame = new JFrame("Tax Incidence Demonstration");
+        frame = new JFrame("Supply and Demand Demonstration");
         this.setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
         this.setBackground(Color.WHITE);
         this.setVisible(true);
