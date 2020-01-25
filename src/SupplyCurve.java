@@ -9,8 +9,8 @@ public class SupplyCurve {
     public int x2;  //(x2, y2): top right
     public int y2;
 
-    public int x; //these represent any point on the curve
-    public int y;
+    public int x = BORDER_OFFSET; //these represent any point on the curve
+    public int y = BORDER_OFFSET;
 
     public SupplyCurve() {
         x1 = BORDER_OFFSET;
@@ -52,12 +52,24 @@ public class SupplyCurve {
         }
     }
 
-    public void setPointsInput(int x, int y) {
+    public void shiftCurve(int x, int y) {
         y = WINDOW_HEIGHT - y;
+        double m = (double) (y2 - y1) / (x2 - x1);
+        setPointsInput(x, y, m);
+    }
+    public void rotateCurve(int x, int y) {
+        y = WINDOW_HEIGHT - y;
+        //checks if cursor is within 1st or 3rd quadrant
+        if ((x > SupplyAndDemand.equilibriumX && y >= SupplyAndDemand.equilibriumY) || (x < SupplyAndDemand.equilibriumX && y <= SupplyAndDemand.equilibriumY)) {
+            double m = (double) (y - SupplyAndDemand.equilibriumY) / (x - SupplyAndDemand.equilibriumX);
+            setPointsInput(x, y, m);
+        }
+    }
+    public void setPointsInput(int x, int y, double m) {
+        // y = WINDOW_HEIGHT - y;
         if (BORDER_OFFSET <= x && x <= WINDOW_WIDTH - BORDER_OFFSET && BORDER_OFFSET < y && y < WINDOW_HEIGHT - BORDER_OFFSET) {
             this.x = x;
             this.y = y;
-            double m = (double) (y2 - y1) / (x2 - x1);
             // equation: y - y1 = m ( x - x1 ). in this case, eq x1: param x, eq y1: param y
 
 
@@ -74,23 +86,18 @@ public class SupplyCurve {
         xAxisIntersection = upperAxisIntersection;
         upperAxisIntersection = temp;*/
 
-            System.out.println("xAxisIntersection: " + xAxisIntersection);
             if (xAxisIntersection >= innerBorder) {
                 x1 = xAxisIntersection;
                 y1 = innerBorder;
             } else { // y = m ( x - x1 ) + y1, x = 100
-                System.out.println("IN X AXIS ELSE");
                 x1 = innerBorder;
                 y1 = (int) (m * (innerBorder - x) + y);
             }
 
-            System.out.println("upperAxisIntersection: " + upperAxisIntersection);
             if (upperAxisIntersection <= outerBorder) {
                 x2 = upperAxisIntersection;
                 y2 = outerBorder;
             } else {
-                System.out.println("IN UPPER AXIS ELSE");
-
                 x2 = outerBorder;
                 y2 = (int) (m * (outerBorder - x) + y);
             }
