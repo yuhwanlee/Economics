@@ -1,22 +1,22 @@
-public class SupplyCurve {
+public class DemandCurve {
     public static final int BORDER_OFFSET = 100;
     public static final int WINDOW_WIDTH = 1000;
     public static final int WINDOW_HEIGHT = 1000;
 
     //y values are the "real" values (as if coordinate system's origin was bottom left)
-    public int x1;  //(x1, y1): bottom left
+    public int x1;  //(x1, y1): top left
     public int y1;
-    public int x2;  //(x2, y2): top right
+    public int x2;  //(x2, y2): bottom right
     public int y2;
 
     public int x; //these represent any point on the curve
     public int y;
 
-    public SupplyCurve() {
+    public DemandCurve() {
         x1 = BORDER_OFFSET;
-        y1 = BORDER_OFFSET;
+        y1 = WINDOW_HEIGHT - BORDER_OFFSET;
         x2 = WINDOW_WIDTH - BORDER_OFFSET;
-        y2 = WINDOW_HEIGHT - BORDER_OFFSET;
+        y2 = BORDER_OFFSET;
     }
 
     public int getX1() {
@@ -44,7 +44,7 @@ public class SupplyCurve {
         y1 = WINDOW_HEIGHT - y1;
         y2 = WINDOW_HEIGHT - y2;
 
-        if (x2 >= x1 && y2 >= y1) {
+        if (x2 >= x1 && y1 >= y2) {
             this.x1 = x1;
             this.y1 = y1;
             this.x2 = x2;
@@ -63,11 +63,12 @@ public class SupplyCurve {
 
             //if bottom of supply curve hits the x axis (equation >= 100)
             // (1 / m)(y - y1) + x1 = x, y = 100
+            // m ( x - x1 ) + y1 = y, x = 100
             int innerBorder = BORDER_OFFSET; // (100)
             int outerBorder = WINDOW_WIDTH - BORDER_OFFSET;
 
-            int xAxisIntersection = (int) ((1 / m) * (innerBorder - y) + x);
-            int upperAxisIntersection = (int) ((1 / m) * (outerBorder - y) + x);
+            int xAxisIntersection = (int) ((1 / m) * (innerBorder - y) + x); //y = 100
+            int yAxisIntersection = (int) (m * (innerBorder - x) + y);  //x = 100
 
             //swapped because y values inverted
         /*int temp = xAxisIntersection;
@@ -75,19 +76,19 @@ public class SupplyCurve {
         upperAxisIntersection = temp;*/
 
             System.out.println("xAxisIntersection: " + xAxisIntersection);
-            if (xAxisIntersection >= innerBorder) {
-                x1 = xAxisIntersection;
-                y1 = innerBorder;
+            if (yAxisIntersection <= outerBorder) {
+                x1 = innerBorder;
+                y1 = yAxisIntersection;
             } else { // y = m ( x - x1 ) + y1, x = 100
                 System.out.println("IN X AXIS ELSE");
-                x1 = innerBorder;
-                y1 = (int) (m * (innerBorder - x) + y);
+                x1 = (int) ((1 / m) * (outerBorder - y) + x);
+                y1 = outerBorder;
             }
 
-            System.out.println("upperAxisIntersection: " + upperAxisIntersection);
-            if (upperAxisIntersection <= outerBorder) {
-                x2 = upperAxisIntersection;
-                y2 = outerBorder;
+            System.out.println("yAxisIntersection: " + yAxisIntersection);
+            if (xAxisIntersection <= outerBorder) {
+                x2 = xAxisIntersection;
+                y2 = innerBorder;
             } else {
                 System.out.println("IN UPPER AXIS ELSE");
 
