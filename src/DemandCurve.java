@@ -1,13 +1,15 @@
 public class DemandCurve {
-    public static final int BORDER_OFFSET = 100;
-    public static final int WINDOW_WIDTH = 1000;
-    public static final int WINDOW_HEIGHT = 1000;
+    public static final int BORDER_OFFSET = SupplyAndDemand.BORDER_OFFSET;
+    public static final int WINDOW_WIDTH = SupplyAndDemand.WINDOW_WIDTH;
+    public static final int WINDOW_HEIGHT = SupplyAndDemand.WINDOW_HEIGHT;
 
     //y values are the "real" values (as if coordinate system's origin was bottom left)
     public int x1;  //(x1, y1): top left
     public int y1;
     public int x2;  //(x2, y2): bottom right
     public int y2;
+
+    public double m = -1;
 
     public int x = BORDER_OFFSET; //these represent any point on the curve
     public int y = WINDOW_HEIGHT - BORDER_OFFSET;
@@ -32,6 +34,8 @@ public class DemandCurve {
         return WINDOW_HEIGHT - y2;
     }
 
+    public double getM() {return m;}
+
     public int getX() {
         return x;
     }
@@ -52,21 +56,25 @@ public class DemandCurve {
         }
     }
 
+    public int getYValue(int x) { // y = m ( x - x1 ) + y1
+        return (int) (m * (x - this.x) + this.y);
+    }
+
     public void shiftCurve(int x, int y) {
         y = WINDOW_HEIGHT - y;
-        double m = (double) (y2 - y1) / (x2 - x1);
-        setPointsInput(x, y, m);
+        //m = (double) (y2 - y1) / (x2 - x1);
+        setPointsInput(x, y);
     }
     public void rotateCurve(int x, int y) {
         y = WINDOW_HEIGHT - y;
         //checks if cursor is within 2nd or 4th quadrant
         if ((x < SupplyAndDemand.equilibriumX && y >= SupplyAndDemand.equilibriumY) || (x > SupplyAndDemand.equilibriumX && y <= SupplyAndDemand.equilibriumY)) {
-            double m = (double) (y - SupplyAndDemand.equilibriumY) / (x - SupplyAndDemand.equilibriumX);
-            setPointsInput(x, y, m);
+            m = (double) (y - SupplyAndDemand.equilibriumY) / (x - SupplyAndDemand.equilibriumX);
+            setPointsInput(x, y);
         }
     }
 
-    public void setPointsInput(int x, int y, double m) {
+    public void setPointsInput(int x, int y) {
         //y = WINDOW_HEIGHT - y;
         if (BORDER_OFFSET <= x && x <= WINDOW_WIDTH - BORDER_OFFSET && BORDER_OFFSET < y && y < WINDOW_HEIGHT - BORDER_OFFSET) {
             this.x = x;

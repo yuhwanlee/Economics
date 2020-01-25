@@ -19,12 +19,14 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     ButtonGroup curves;
     ButtonGroup modes;
 
+    JCheckBox surplusCheckBox;
+
     public int x = 500;
     public int y = 500;
 
     public static int equilibriumX;
     public static int equilibriumY;
-    public static final int BORDER_OFFSET = 100;
+    public static final int BORDER_OFFSET = 150;
     public static final int WINDOW_WIDTH = 1000;
     public static final int WINDOW_HEIGHT = 1000;
 
@@ -60,6 +62,9 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         this.add(shiftButton);
         this.add(rotateButton);
 
+        surplusCheckBox = new JCheckBox("Surplus");
+        this.add(surplusCheckBox);
+
         frame.add(this);
         frame.addMouseListener(this);
         frame.addMouseMotionListener(this);
@@ -92,7 +97,8 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     public void calculateEquilibrium() {
         double supplySlope = (double) (WINDOW_HEIGHT - s.getY2() - (WINDOW_HEIGHT - s.getY1())) / (s.getX2() - s.getX1());
         double demandSlope = (double) (WINDOW_HEIGHT - d.getY2() - (WINDOW_HEIGHT - d.getY1())) / (d.getX2() - d.getX1());
-
+        /*double supplySlope = s.getM();
+        double demandSlope = d.getM();*/
 
         double equilibriumX = (supplySlope * s.getX() - s.getY() - demandSlope * d.getX() + d.getY()) / (supplySlope - demandSlope);
         SupplyAndDemand.equilibriumX = (int) equilibriumX;
@@ -136,15 +142,132 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         System.out.println("(" + equilibriumX + ", " + equilibriumY + ")");
         g.setColor(Color.BLACK);
     }
+    public void drawProducerSurplus(Graphics g) {
+        //left bound of producer surplus is the end of the leftmost curve
+        int leftBound = Math.max(s.getX1(), d.getX1());
+        //left corner, left corner up to equilibrium, equilibrium
+        g.setColor(new Color(10, 145, 130));
+        int[] xValues = new int[] {leftBound, leftBound, equilibriumX};
+        int[] yValues = new int[] {WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - equilibriumY, WINDOW_HEIGHT - equilibriumY};
+        g.drawPolygon(xValues, yValues, 3);
+
+        double lineSlope = -1;
+        int currentX = leftBound;
+        int currentY = s.getYValue(leftBound);
+
+        double supplySlope = s.getM();
+        int increment = 20;
+
+        while (currentX <= equilibriumX || currentY <= equilibriumY) {
+            if (currentY <= equilibriumY) { //lines that start from the left of producer surplus
+
+                double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * leftBound + currentY) / (supplySlope - lineSlope);
+                // y = m ( x - x1 ) + y1
+                double intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
+                g.drawLine(leftBound, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
+                currentY += increment;
+                if (currentY > equilibriumY) { //the x position gets what "hangs over" the y positions
+                    currentX += currentY - equilibriumY;
+                }
+            } else { //lines that start from the top of producer surplus
+                double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * currentX + equilibriumY) / (supplySlope - lineSlope);
+                // y = m ( x - x1 ) + y1
+                double intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
+                g.drawLine(currentX, WINDOW_HEIGHT - equilibriumY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
+                currentX += increment;
+            }
+        }
+        if (s.getM() > 0) {
+            //drawing the "PS" label, located in the centroid of the triangle
+            g.setColor(new Color(10, 95, 75));
+            //using the middles of leftmost and topmost borders
+            //first (left border) line
+            int lx = leftBound;
+            int ly = (equilibriumY + s.getYValue(leftBound)) / 2;
+            double lm = (double) (equilibriumY - ly) / (equilibriumX - lx);
+            //second (top border) line
+            int tx = (leftBound + equilibriumX) / 2;
+            int ty = equilibriumY;
+            double tm = (double) (s.getYValue(leftBound) - ty) / (leftBound - tx);
+
+            double intersectionX = (lm * lx - ly - tm * tx + ty) / (lm - tm);
+            // y = m ( x - x1 ) + y1
+            double intersectionY = lm * (intersectionX - lx) + ly;
+            g.drawString("PS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
+
+        }
+        g.setColor(Color.BLACK);
+    }
+
+    public void drawConsumerSurplus(Graphics g) {
+        //left bound of consumer surplus is the end of the leftmost curve
+        int leftBound = Math.max(s.getX1(), d.getX1());
+        //left corner, left corner down to equilibrium, equilibrium
+        g.setColor(new Color(210, 80, 0));
+        int[] xValues = new int[] {leftBound, leftBound, equilibriumX};
+        int[] yValues = new int[] {WINDOW_HEIGHT - d.getYValue(leftBound), WINDOW_HEIGHT - equilibriumY, WINDOW_HEIGHT - equilibriumY};
+        g.drawPolygon(xValues, yValues, 3);
+
+        double lineSlope = 1;
+        int currentX = leftBound;
+        int currentY = d.getYValue(leftBound);
+
+        double demandSlope = d.getM();
+        int increment = 20;
+
+        while (currentX <= equilibriumX || currentY >= equilibriumY) {
+            if (currentY >= equilibriumY) { //lines that start from the left of consumer surplus
+
+                double intersectionX = (lineSlope * leftBound - currentY - demandSlope * d.getX() + d.getY()) / (lineSlope - demandSlope);
+                // y = m ( x - x1 ) + y1
+                double intersectionY = demandSlope * (intersectionX - d.getX()) + d.getY();
+                g.drawLine(leftBound, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
+                currentY -= increment;
+                if (currentY < equilibriumY) { //the x position gets what "hangs over" the y positions
+                    currentX += equilibriumY - currentY;
+                }
+            } else { //lines that start from the bottom of consumer surplus
+                double intersectionX = (lineSlope * currentX - equilibriumY - demandSlope * d.getX() + d.getY()) / (lineSlope - demandSlope);
+                // y = m ( x - x1 ) + y1
+                double intersectionY = demandSlope * (intersectionX - d.getX()) + d.getY();
+                g.drawLine(currentX, WINDOW_HEIGHT - equilibriumY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
+                currentX += increment;
+            }
+        }
+        if (d.getM() < 0) {
+            //drawing the "CS" label, located in the centroid of the triangle
+            g.setColor(new Color(155, 65, 0));
+            //using the middles of leftmost and bottommost borders
+            //first (left border) line
+            int lx = leftBound;
+            int ly = (equilibriumY + d.getYValue(leftBound)) / 2;
+            double lm = (double) (equilibriumY - ly) / (equilibriumX - lx);
+            //second (bottom border) line
+            int bx = (leftBound + equilibriumX) / 2;
+            int by = equilibriumY;
+            double bm = (double) (d.getYValue(leftBound) - by) / (leftBound - bx);
+
+            double intersectionX = (lm * lx - ly - bm * bx + by) / (lm - bm);
+            // y = m ( x - x1 ) + y1
+            double intersectionY = lm * (intersectionX - lx) + ly;
+            g.drawString("CS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
+        }
+        g.setColor(Color.BLACK);
+    }
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawAxes(g);
         drawCurves(g);
+        //the equilibrium point should only change when there is a shift
         if ((!shiftButton.isSelected() && !rotateButton.isSelected()) || shiftButton.isSelected()) {
             calculateEquilibrium();
         }
         drawEquilibrium(g);
+        if (surplusCheckBox.isSelected()) {
+            drawProducerSurplus(g);
+            drawConsumerSurplus(g);
+        }
         repaint();
     }
 
