@@ -25,13 +25,13 @@ public class SupplyCurve {
         return x1;
     }
     public int getY1() { //real values -> graphed values
-        return WINDOW_HEIGHT - y1;
+        return y1;
     }
     public int getX2() {
         return x2;
     }
     public int getY2() { //real values -> graphed values
-        return WINDOW_HEIGHT - y2;
+        return y2;
     }
 
     public double getM() {return m;}
@@ -56,17 +56,18 @@ public class SupplyCurve {
         }
     }
 
+    public int getXValue(int y) { // (1 / m) (y - y1) + x1 = x
+        return (int) ((1 / m) * (y - this.y) + this.x);
+    }
     public int getYValue(int x) { // y = m ( x - x1 ) + y1
         return (int) (m * (x - this.x) + this.y);
     }
 
     public void shiftCurve(int x, int y) {
-        y = WINDOW_HEIGHT - y;
         //m = (double) (y2 - y1) / (x2 - x1);
         setPointsInput(x, y/*, m*/);
     }
     public void rotateCurve(int x, int y) {
-        y = WINDOW_HEIGHT - y;
         //checks if cursor is within 1st or 3rd quadrant
         if ((x > SupplyAndDemand.equilibriumX && y >= SupplyAndDemand.equilibriumY) || (x < SupplyAndDemand.equilibriumX && y <= SupplyAndDemand.equilibriumY)) {
             m = (double) (y - SupplyAndDemand.equilibriumY) / (x - SupplyAndDemand.equilibriumX);
