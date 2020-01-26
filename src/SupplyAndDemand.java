@@ -15,6 +15,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     JRadioButton supplyButton;
     JRadioButton demandButton;
     JRadioButton priceFloorButton;
+    JRadioButton priceCeilingButton;
 
     JRadioButton shiftButton;
     JRadioButton rotateButton;
@@ -25,9 +26,11 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     JCheckBox surplusCheckBox;
     JCheckBox DWLCheckBox;
     JCheckBox showPriceFloor;
+    JCheckBox showPriceCeiling;
 
 
     public int priceFloor = WINDOW_HEIGHT / 2;
+    public int priceCeiling = WINDOW_HEIGHT / 2;
 
     static Font font = new Font("Helvetica Neue", Font.PLAIN, 15);
 
@@ -54,6 +57,8 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
 
         priceFloorButton = new JRadioButton();
         priceFloorButton.setText("Price Floor");
+        priceCeilingButton = new JRadioButton("Price Ceiling");
+
         shiftButton = new JRadioButton();
         shiftButton.setText("Shift");
 
@@ -65,10 +70,12 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         curves.add(supplyButton);
         curves.add(demandButton);
         curves.add(priceFloorButton);
+        curves.add(priceCeilingButton);
 
         this.add(supplyButton);
         this.add(demandButton);
         this.add(priceFloorButton);
+        this.add(priceCeilingButton);
 
         modes = new ButtonGroup();
         modes.add(shiftButton);
@@ -86,6 +93,9 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
 
         showPriceFloor = new JCheckBox("Show Price Floor");
         this.add(showPriceFloor);
+
+        showPriceCeiling = new JCheckBox("Show Price Ceiling");
+        this.add(showPriceCeiling);
 
         frame.add(this);
         frame.addMouseListener(this);
@@ -163,107 +173,61 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         g.setColor(Color.BLACK);
     }
     public void drawProducerSurplus(Graphics g) {
-        if (!showPriceFloor.isSelected()) {
-            //left bound of producer surplus is the end of the leftmost curve
-            int leftBound = Math.max(s.getX1(), d.getX1());
-            //left corner, left corner up to equilibrium, equilibrium
-            g.setColor(new Color(10, 145, 130));
-            int[] xValues = new int[]{leftBound, leftBound, equilibriumX};
-            int[] yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - equilibriumY, WINDOW_HEIGHT - equilibriumY};
-            g.drawPolygon(xValues, yValues, 3);
+        //left bound of producer surplus is the end of the leftmost curve
+        int leftBound = Math.max(s.getX1(), d.getX1());
+        //left corner, left corner up to equilibrium, equilibrium
+        g.setColor(new Color(10, 145, 130));
 
-            double lineSlope = -1;
-            int currentX = leftBound;
-            int currentY = s.getYValue(leftBound);
+        int xLimit;
+        int yLimit;
+        if (showPriceFloor.isSelected()) {
+            xLimit = d.getXValue(priceFloor);
+            yLimit = priceFloor;
+        } else if (showPriceCeiling.isSelected()) {
+            xLimit = s.getXValue(priceCeiling);
+            yLimit = priceCeiling;
+        } else {
+            xLimit = equilibriumX;
+            yLimit = equilibriumY;
+        }
 
-            double supplySlope = s.getM();
-            int increment = 20;
-
-            while (currentX <= equilibriumX || currentY <= equilibriumY) {
-                if (currentY <= equilibriumY) { //lines that start from the left of producer surplus
-
-                    double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * leftBound + currentY) / (supplySlope - lineSlope);
-                    // y = m ( x - x1 ) + y1
-                    double intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
-                    g.drawLine(leftBound, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
-                    currentY += increment;
-                    if (currentY > equilibriumY) { //the x position gets what "hangs over" the y positions
-                        currentX += currentY - equilibriumY;
-                    }
-                } else { //lines that start from the top of producer surplus
-                    double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * currentX + equilibriumY) / (supplySlope - lineSlope);
-                    // y = m ( x - x1 ) + y1
-                    double intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
-                    g.drawLine(currentX, WINDOW_HEIGHT - equilibriumY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
-                    currentX += increment;
-                }
-            }
-            if (s.getM() > 0) {
-                //drawing the "PS" label, located in the centroid of the triangle
-                g.setColor(new Color(10, 95, 75));
-                //using the middles of leftmost and topmost borders
-                //first (left border) line
-                int lx = leftBound;
-                int ly = (equilibriumY + s.getYValue(leftBound)) / 2;
-                double lm = (double) (equilibriumY - ly) / (equilibriumX - lx);
-                //second (top border) line
-                int tx = (leftBound + equilibriumX) / 2;
-                int ty = equilibriumY;
-                double tm = (double) (s.getYValue(leftBound) - ty) / (leftBound - tx);
-
-                double intersectionX = (lm * lx - ly - tm * tx + ty) / (lm - tm);
-                // y = m ( x - x1 ) + y1
-                double intersectionY = lm * (intersectionX - lx) + ly;
-                g.drawString("PS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
-
-            }
-        } else if (showPriceFloor.isSelected()){
-            //left bound of producer surplus is the end of the leftmost curve
-            int leftBound = Math.max(s.getX1(), d.getX1());
-            //left corner, left corner up to price floor, price floor-demand intersection, price floor-supply intersection
-            g.setColor(new Color(10, 145, 130));
-            int[] xValues = new int[]{leftBound, leftBound, d.getXValue(priceFloor), d.getXValue(priceFloor)};
-            int[] yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - priceFloor, WINDOW_HEIGHT - priceFloor, WINDOW_HEIGHT - s.getYValue(d.getXValue(priceFloor))};
+        if (showPriceFloor.isSelected()) {
+            int[] xValues = new int[]{leftBound, leftBound, xLimit, xLimit};
+            int[] yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - s.getYValue(xLimit)};
             g.drawPolygon(xValues, yValues, 4);
+        } else { // price ceiling and no pf/pc are drawn the same
+            int[] xValues = new int[]{leftBound, leftBound, xLimit};
+            int[] yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit};
+            g.drawPolygon(xValues, yValues, 3);
+        }
 
-            double lineSlope = -1;
-            int currentX = leftBound;
-            int currentY = s.getYValue(leftBound);
+        double lineSlope = -1;
+        int currentX = leftBound;
+        int currentY = s.getYValue(leftBound);
 
-            double supplySlope = s.getM();
-            int increment = 20;
+        double supplySlope = s.getM();
+        int increment = 20;
 
-            while (currentX <= d.getXValue(priceFloor) || currentY <= priceFloor) {
-                if (currentY <= priceFloor) { //lines that start from the left of producer surplus
-
-                    double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * leftBound + currentY) / (supplySlope - lineSlope);
-                    double intersectionY;
-                    if (intersectionX > d.getXValue(priceFloor)) { // x = d.getXVal(pf)
-                        intersectionX = d.getXValue(priceFloor);
-                        intersectionY = lineSlope * (intersectionX - currentX) + currentY;
-                    } else {
-                        intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
-                    }
-                    // y = m ( x - x1 ) + y1
-                    g.drawLine(leftBound, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
-                    currentY += increment;
-                    if (currentY > priceFloor) { //the x position gets what "hangs over" the y positions
-                        currentX += currentY - priceFloor;
-                    }
-                } else { //lines that start from the top of producer surplus
-                    double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * currentX + priceFloor) / (supplySlope - lineSlope);
-                    double intersectionY;
-                    if (intersectionX > d.getXValue(priceFloor)) {
-                        intersectionX = d.getXValue(priceFloor);
-                        intersectionY = lineSlope * (intersectionX - currentX) + priceFloor;
-                    } else {
-                        // y = m ( x - x1 ) + y1
-                        intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
-                    }
-                    g.drawLine(currentX, WINDOW_HEIGHT - priceFloor, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
-                    currentX += increment;
-                }
+        while (currentX < xLimit || currentY < yLimit) { //drawing diagonal lines
+            double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * currentX + currentY) / (supplySlope - lineSlope);
+            double intersectionY;
+            //if the line intersects supply at a point greater than the horizontal limit, have it hit the vertical line
+            if (intersectionX > xLimit) { // x = d.getXVal(pf)
+                intersectionX = xLimit;
+                intersectionY = lineSlope * (intersectionX - currentX) + currentY;
+            } else { //if the line intersects supply before the limit or if PS is a triangle
+                intersectionY = supplySlope * (intersectionX - s.getX()) + s.getY();
             }
+            // y = m ( x - x1 ) + y1
+            g.drawLine(currentX, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
+            currentY += increment;
+            if (currentY >= yLimit) { //the x position gets what "hangs over" the y positions
+                currentX += currentY - yLimit;
+                currentY = yLimit;
+            }
+        }
+
+        if (showPriceFloor.isSelected()) {
             if (s.getM() > 0 || priceFloor > s.getY1()) { //or statement: if s is horizontal but there is still surplus
                 //drawing the "PS" label, located center of the trapezoid (intersection of drawing medians -> medians)
                 g.setColor(new Color(10, 95, 75));
@@ -286,7 +250,27 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
                 g.drawString("PS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
 
             }
+        } else {
+            if (s.getM() > 0) {
+                //drawing the "PS" label, located in the centroid of the triangle
+                g.setColor(new Color(10, 95, 75));
+                //using the middles of leftmost and topmost borders
+                //first (left border) line -> top right corner
+                int lx = leftBound;
+                int ly = (yLimit + s.getYValue(leftBound)) / 2;
+                double lm = (double) (yLimit - ly) / (xLimit - lx);
+                //second (top border) line -> bottom left corner
+                int tx = (leftBound + xLimit) / 2;
+                int ty = yLimit;
 
+                double tm = (double) (s.getYValue(leftBound) - ty) / (leftBound - tx);
+
+                double intersectionX = (lm * lx - ly - tm * tx + ty) / (lm - tm);
+                // y = m ( x - x1 ) + y1
+                double intersectionY = lm * (intersectionX - lx) + ly;
+                g.drawString("PS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
+
+            }
         }
         g.setColor(Color.BLACK);
     }
@@ -294,55 +278,88 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     public void drawConsumerSurplus(Graphics g) {
        /* if (!showPriceFloor.isSelected()) {*/
 
-            //left bound of consumer surplus is the end of the leftmost curve
-            int leftBound = Math.max(s.getX1(), d.getX1());
+        //left bound of consumer surplus is the end of the leftmost curve
+        int leftBound = Math.max(s.getX1(), d.getX1());
+        g.setColor(new Color(210, 80, 0));
 
-            double lineSlope = 1;
-            int currentX = leftBound;
-            int currentY = d.getYValue(leftBound);
+        double lineSlope = 1;
+        int currentX = leftBound;
+        int currentY = d.getYValue(leftBound);
 
-            double demandSlope = d.getM();
-            int increment = 20;
+        double demandSlope = d.getM();
+        int increment = 20;
 
-            int xLimit;
-            int yLimit;
-            if (showPriceFloor.isSelected()) {
-                xLimit = d.getXValue(priceFloor);
-                yLimit = priceFloor;
-            } else {
-                xLimit = equilibriumX;
-                yLimit = equilibriumY;
-            }
+        int xLimit;
+        int yLimit;
+        if (showPriceFloor.isSelected()) {
+            xLimit = d.getXValue(priceFloor);
+            yLimit = priceFloor;
+        } else if (showPriceCeiling.isSelected()) {
+            xLimit = s.getXValue(priceCeiling);
+            yLimit = priceCeiling;
+        } else {
+            xLimit = equilibriumX;
+            yLimit = equilibriumY;
+        }
 
+        if (showPriceCeiling.isSelected()) { //top left, bottom left, bottom right, top right
+            int[] xValues = new int[]{leftBound, leftBound, xLimit, xLimit};
+            int[] yValues = new int[]{WINDOW_HEIGHT - d.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - d.getYValue(xLimit)};
+            g.drawPolygon(xValues, yValues, 4);
+        } else {
             //left corner, left corner down to equilibrium, equilibrium
-            g.setColor(new Color(210, 80, 0));
             int[] xValues = new int[]{leftBound, leftBound, xLimit};
             int[] yValues = new int[]{WINDOW_HEIGHT - d.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit};
             g.drawPolygon(xValues, yValues, 3);
+        }
 
 
-            while (currentX <= xLimit || currentY >= yLimit) {
-                if (currentY >= yLimit) { //lines that start from the left of consumer surplus
-
-                    double intersectionX = (lineSlope * leftBound - currentY - demandSlope * d.getX() + d.getY()) / (lineSlope - demandSlope);
-                    // y = m ( x - x1 ) + y1
-                    double intersectionY = demandSlope * (intersectionX - d.getX()) + d.getY();
-                    g.drawLine(leftBound, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
-                    currentY -= increment;
-                    if (currentY < yLimit) { //the x position gets what "hangs over" the y positions
-                        currentX += yLimit - currentY;
-                    }
-                } else { //lines that start from the bottom of consumer surplus
-                    double intersectionX = (lineSlope * currentX - yLimit - demandSlope * d.getX() + d.getY()) / (lineSlope - demandSlope);
-                    // y = m ( x - x1 ) + y1
-                    double intersectionY = demandSlope * (intersectionX - d.getX()) + d.getY();
-                    g.drawLine(currentX, WINDOW_HEIGHT - yLimit, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
-                    currentX += increment;
-                }
+        while (currentX < xLimit || currentY > yLimit) {
+            double intersectionX = (demandSlope * d.getX() - d.getY() - lineSlope * currentX + currentY) / (demandSlope - lineSlope);
+            double intersectionY;
+            //if the line intersects supply at a point greater than the horizontal limit, have it hit the vertical line
+            if (intersectionX > xLimit) { // x = d.getXVal(pf)
+                intersectionX = xLimit;
+                intersectionY = lineSlope * (intersectionX - currentX) + currentY;
+            } else { //if the line intersects supply before the limit or if PS is a triangle
+                intersectionY = demandSlope * (intersectionX - d.getX()) + d.getY();
             }
+            // y = m ( x - x1 ) + y1
+            g.drawLine(currentX, WINDOW_HEIGHT - currentY, (int) intersectionX, WINDOW_HEIGHT - (int) intersectionY);
+            currentY -= increment;
+            if (currentY <= yLimit) { //the x position gets what "hangs over" the y positions
+                currentX += yLimit - currentY;
+                currentY = yLimit;
+            }
+        }
+
+        g.setColor(new Color(155, 65, 0));
+
+        if (showPriceCeiling.isSelected()) {
+            if (d.getM() < 0 || priceCeiling < d.getY1()) { //or statement: if s is horizontal but there is still surplus
+                //drawing the "PS" label, located center of the trapezoid (intersection of drawing medians -> medians)
+
+                //coordinates of left median
+                int lx = leftBound;
+                int ly = (yLimit + d.getYValue(leftBound)) / 2;
+                //coordinates of right median
+                int rx = xLimit;
+                int ry = (yLimit + d.getYValue(xLimit)) / 2;
+
+                //horizontal line slope
+                double hm = (double) (ry - ly) / (rx - lx);
+                //x value of top median (equation used: x = result)
+                int xBot = (leftBound + xLimit) / 2;
+
+                double intersectionX = xBot;
+                // y = m ( x - x1 ) + y1
+                double intersectionY = hm * (intersectionX - rx) + ry;
+                g.drawString("CS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
+
+            }
+        } else {
             if (d.getM() < 0) {
                 //drawing the "CS" label, located in the centroid of the triangle
-                g.setColor(new Color(155, 65, 0));
                 //using the middles of leftmost and bottommost borders
                 //first (left border) line
                 int lx = leftBound;
@@ -358,6 +375,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
                 double intersectionY = lm * (intersectionX - lx) + ly;
                 g.drawString("CS", (int) intersectionX - 8, WINDOW_HEIGHT - ((int) intersectionY - 5));
             }
+        }
         /*} else if (showPriceFloor.isSelected()) {
             //left bound of producer surplus is the end of the leftmost curve
             int leftBound = Math.max(s.getX1(), d.getX1());
@@ -407,6 +425,19 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
             priceFloor = d.getYValue(s.getXValue(BORDER_OFFSET));
         }
     }
+    public void calculatePriceCeiling() {
+        if (priceCeiling > equilibriumY) {
+            priceCeiling = equilibriumY;
+        } else if (priceCeiling < s.getY1()) {
+            priceCeiling = s.getY1();
+        }
+
+        //if the price ceiling-supply intersection up to demand is above the upper border
+        if (d.getYValue(s.getXValue(priceCeiling)) > WINDOW_HEIGHT - BORDER_OFFSET) {
+            priceCeiling = s.getYValue(d.getXValue(WINDOW_HEIGHT - BORDER_OFFSET));
+        }
+    }
+
     public void drawPriceFloor(Graphics g) {
         g.setColor(new Color(168, 0, 255));
         g.drawString("Pf", BORDER_OFFSET - 15, WINDOW_HEIGHT - (priceFloor - 7));
@@ -432,40 +463,72 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         g.setColor(Color.BLACK);
     }
 
-    public void drawDWL(Graphics g) {
-        if (showPriceFloor.isSelected()) {
-            g.setColor(new Color(225, 65, 193));
-            //triangle: price floor-demand intersection, down to supply, to equilibrium
-            int[] xValues = new int[] {d.getXValue(priceFloor), d.getXValue(priceFloor), equilibriumX};
-            int[] yValues = new int[] {WINDOW_HEIGHT - priceFloor, WINDOW_HEIGHT - s.getYValue(d.getXValue(priceFloor)), WINDOW_HEIGHT - equilibriumY};
-            g.drawPolygon(xValues, yValues, 3);
+    public void drawPriceCeiling(Graphics g) {
+        g.setColor(new Color(0, 5, 242));
 
-            int increment = 10;
-            int currentX = d.getXValue(priceFloor) + increment;
-            while (currentX < equilibriumX) {
-                g.drawLine(currentX, WINDOW_HEIGHT - d.getYValue(currentX), currentX, WINDOW_HEIGHT - s.getYValue(currentX));
-                currentX += increment;
-            }
-
-            if (d.getXValue(priceFloor) < equilibriumX) {
-                g.setColor(new Color(180, 52, 134));
-                //using top and bottom right line to calculate center
-                int lx = d.getXValue(priceFloor);
-                int ly = (priceFloor + s.getYValue(d.getXValue(priceFloor))) / 2;
-                double lm = (double) (equilibriumY - ly) / (equilibriumX - lx);
-
-                //second (bottom right border) line
-                int bx = (d.getXValue(priceFloor) + equilibriumX) / 2;
-                int by = (s.getYValue(d.getXValue(priceFloor)) + equilibriumY) / 2;
-                double bm = (double) (priceFloor - by) / (d.getXValue(priceFloor) - bx);
-
-                double intersectionX = (lm * lx - ly - bm * bx + by) / (lm - bm);
-                // y = m ( x - x1 ) + y1
-                double intersectionY = lm * (intersectionX - lx) + ly;
-                g.drawString("DWL", (int) intersectionX - 11, WINDOW_HEIGHT - ((int) intersectionY - 5));
-            }
-
+        g.drawString("Pc", BORDER_OFFSET - 15, WINDOW_HEIGHT - (priceCeiling - 7));
+        int increment = 10;
+        int currentX = BORDER_OFFSET;
+        while (currentX + increment <= WINDOW_WIDTH - BORDER_OFFSET) { //horizontal line
+            int start = currentX + increment / 4;
+            int end = currentX + 3 * increment / 4;
+            g.drawLine(start, WINDOW_HEIGHT - priceCeiling, end, WINDOW_HEIGHT - priceCeiling);
+            currentX += increment;
         }
+
+        int currentY = BORDER_OFFSET;
+        while (currentY + increment <= priceCeiling) { //line down to x axis
+            int start = currentY + increment / 4;
+            int end = currentY + 3 * increment / 4;
+            g.drawLine(s.getXValue(priceCeiling), WINDOW_HEIGHT - start, s.getXValue(priceCeiling), WINDOW_HEIGHT - end);
+            currentY += increment;
+        }
+        g.drawString("Qc", s.getXValue(priceCeiling) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+
+
+        g.setColor(Color.BLACK);
+    }
+
+    public void drawDWL(Graphics g) {
+
+        g.setColor(new Color(225, 131, 170));
+        //triangle: price floor-demand intersection, down to supply, to equilibrium
+        int xStart;
+        if (showPriceFloor.isSelected()) {
+            xStart = d.getXValue(priceFloor);
+        } else { // if price ceiling selected
+            xStart = s.getXValue(priceCeiling);
+        }
+        //top, bottom, right
+        int[] xValues = new int[] {xStart, xStart, equilibriumX};
+        int[] yValues = new int[] {WINDOW_HEIGHT - d.getYValue(xStart), WINDOW_HEIGHT - s.getYValue(xStart), WINDOW_HEIGHT - equilibriumY};
+        g.drawPolygon(xValues, yValues, 3);
+
+        int increment = 10;
+        int currentX = xStart + increment;
+        while (currentX < equilibriumX) {
+            g.drawLine(currentX, WINDOW_HEIGHT - d.getYValue(currentX), currentX, WINDOW_HEIGHT - s.getYValue(currentX));
+            currentX += increment;
+        }
+
+        if (xStart < equilibriumX) {
+            g.setColor(new Color(225, 117, 166));
+            //using top and bottom right line to calculate center
+            int lx = xStart;
+            int ly = (d.getYValue(xStart) + s.getYValue(xStart)) / 2;
+            double lm = (double) (equilibriumY - ly) / (equilibriumX - lx);
+
+            //second (bottom right border) line
+            int bx = (xStart + equilibriumX) / 2;
+            int by = (s.getYValue(xStart) + equilibriumY) / 2;
+            double bm = (double) (d.getYValue(xStart) - by) / (xStart - bx);
+
+            double intersectionX = (lm * lx - ly - bm * bx + by) / (lm - bm);
+            // y = m ( x - x1 ) + y1
+            double intersectionY = lm * (intersectionX - lx) + ly;
+            g.drawString("DWL", (int) intersectionX - 11, WINDOW_HEIGHT - ((int) intersectionY - 5));
+        }
+        
         g.setColor(Color.BLACK);
     }
 
@@ -481,12 +544,19 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         drawEquilibrium(g);
 
         calculatePriceFloor();
+        calculatePriceCeiling();
+
         if (surplusCheckBox.isSelected()) {
             drawProducerSurplus(g);
             drawConsumerSurplus(g);
         }
         if (showPriceFloor.isSelected()) {
             drawPriceFloor(g);
+            if (DWLCheckBox.isSelected()) {
+                drawDWL(g);
+            }
+        } else if (showPriceCeiling.isSelected()) {
+            drawPriceCeiling(g);
             if (DWLCheckBox.isSelected()) {
                 drawDWL(g);
             }
@@ -546,15 +616,9 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
                 } else if (demandButton.isSelected()) {
                     d.shiftCurve(x, y);
                 } else if (priceFloorButton.isSelected()) {
-                    //priceFloor = Math.min(Math.max(WINDOW_HEIGHT - y, equilibriumY), d.getY1());
                     priceFloor = y;
-
-                    if (priceFloor < equilibriumY) {
-                        priceFloor = equilibriumY;
-                    } else if (priceFloor > d.getY1()) {
-                        priceFloor = d.getY1();
-                    }
-
+                } else if (priceCeilingButton.isSelected()) {
+                    priceCeiling = y;
                 }
             } else if (rotateButton.isSelected()) {
                 if (supplyButton.isSelected()) {
