@@ -12,22 +12,24 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     static SupplyCurve s = new SupplyCurve();
     static DemandCurve d = new DemandCurve();
 
+    JLabel curvesLabel;
     JRadioButton supplyButton;
     JRadioButton demandButton;
     JRadioButton priceFloorButton;
     JRadioButton priceCeilingButton;
 
+    JLabel modesLabel;
     JRadioButton shiftButton;
     JRadioButton rotateButton;
 
     ButtonGroup curves;
     ButtonGroup modes;
 
+    JLabel extrasLabel;
     JCheckBox surplusCheckBox;
     JCheckBox DWLCheckBox;
     JCheckBox showPriceFloor;
     JCheckBox showPriceCeiling;
-
 
     public int priceFloor = WINDOW_HEIGHT / 2;
     public int priceCeiling = WINDOW_HEIGHT / 2;
@@ -49,22 +51,17 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         this.setBackground(Color.WHITE);
         this.setVisible(true);
 
-        supplyButton = new JRadioButton();
-        supplyButton.setText("Supply");
+        this.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(2, 2, 2, 2);
+        //c.anchor = GridBagConstraints.FIRST_LINE_START;
+        int[] columnLengths = new int[3];
 
-        demandButton = new JRadioButton();
-        demandButton.setText("Demand");
-
-        priceFloorButton = new JRadioButton();
-        priceFloorButton.setText("Price Floor");
+        curvesLabel = new JLabel("Curves:");
+        supplyButton = new JRadioButton("Supply");
+        demandButton = new JRadioButton("Demand");
+        priceFloorButton = new JRadioButton("Price Floor");
         priceCeilingButton = new JRadioButton("Price Ceiling");
-
-        shiftButton = new JRadioButton();
-        shiftButton.setText("Shift");
-
-        rotateButton = new JRadioButton();
-        rotateButton.setText("Rotate");
-
 
         curves = new ButtonGroup();
         curves.add(supplyButton);
@@ -72,31 +69,65 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         curves.add(priceFloorButton);
         curves.add(priceCeilingButton);
 
-        this.add(supplyButton);
-        this.add(demandButton);
-        this.add(priceFloorButton);
-        this.add(priceCeilingButton);
+        c.gridx = 0;
+        c.gridy = 0;
+        this.add(curvesLabel, c);
+        c.gridy = 1;
+        this.add(supplyButton, c);
+        c.gridy = 2;
+        this.add(demandButton, c);
+        c.gridy = 3;
+        this.add(priceFloorButton, c);
+        c.gridy = 4;
+        this.add(priceCeilingButton, c);
+        columnLengths[0] = 4;
+
+        modesLabel = new JLabel("Modes:");
+        shiftButton = new JRadioButton("Shift");
+        rotateButton = new JRadioButton("Rotate");
 
         modes = new ButtonGroup();
         modes.add(shiftButton);
         modes.add(rotateButton);
 
-        this.add(shiftButton);
-        this.add(rotateButton);
+        c.gridx = 1;
+        c.gridy = 0;
+        this.add(modesLabel, c);
+        c.gridy = 1;
+        this.add(shiftButton, c);
+        c.gridy = 2;
+        this.add(rotateButton, c);
+        columnLengths[1] = 2;
 
+        c.gridx = 2;
+        c.gridy = 0;
+        extrasLabel = new JLabel("Extras:");
+        this.add(extrasLabel, c);
 
+        c.gridy = 1;
         surplusCheckBox = new JCheckBox("Surplus");
-        this.add(surplusCheckBox);
+        this.add(surplusCheckBox, c);
 
+        c.gridy = 2;
         DWLCheckBox = new JCheckBox("DWL");
-        this.add(DWLCheckBox);
+        this.add(DWLCheckBox, c);
 
+        c.gridy = 3;
         showPriceFloor = new JCheckBox("Show Price Floor");
-        this.add(showPriceFloor);
+        this.add(showPriceFloor, c);
 
+        c.gridy = 4;
         showPriceCeiling = new JCheckBox("Show Price Ceiling");
-        this.add(showPriceCeiling);
+        this.add(showPriceCeiling, c);
+        columnLengths[2] = 4;
 
+        for (int lengthsIndex = 0; lengthsIndex < columnLengths.length; lengthsIndex++) {
+            c.gridx = lengthsIndex;
+            for (int i = columnLengths[lengthsIndex]; i < (WINDOW_HEIGHT - 100) / 19 ; i++) {
+                c.gridy = i;
+                this.add(new JLabel(" "), c);
+            }
+        }
         frame.add(this);
         frame.addMouseListener(this);
         frame.addMouseMotionListener(this);
@@ -528,7 +559,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
             double intersectionY = lm * (intersectionX - lx) + ly;
             g.drawString("DWL", (int) intersectionX - 11, WINDOW_HEIGHT - ((int) intersectionY - 5));
         }
-        
+
         g.setColor(Color.BLACK);
     }
 
