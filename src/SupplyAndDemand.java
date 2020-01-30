@@ -30,6 +30,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     JCheckBox DWLCheckBox;
     JCheckBox showPriceFloor;
     JCheckBox showPriceCeiling;
+   // JCheckBox showSolidSurplus;
 
     public int priceFloor = WINDOW_HEIGHT / 2;
     public int priceCeiling = WINDOW_HEIGHT / 2;
@@ -120,6 +121,12 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         showPriceCeiling = new JCheckBox("Show Price Ceiling");
         this.add(showPriceCeiling, c);
         columnLengths[2] = 4;
+
+        /*c.gridx = 3;
+        c.gridy = 0;
+        showSolidSurplus = new JCheckBox("Solid Surplus");
+        this.add(showSolidSurplus, c);
+        columnLengths[3] = 0;*/
 
         for (int lengthsIndex = 0; lengthsIndex < columnLengths.length; lengthsIndex++) {
             c.gridx = lengthsIndex;
@@ -222,13 +229,26 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
             yLimit = equilibriumY;
         }
 
+        int[] xValues;
+        int[] yValues;
         if (showPriceFloor.isSelected()) {
-            int[] xValues = new int[]{leftBound, leftBound, xLimit, xLimit};
-            int[] yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - s.getYValue(xLimit)};
+            xValues = new int[]{leftBound, leftBound, xLimit, xLimit};
+            yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - s.getYValue(xLimit)};
+            /*if (showSolidSurplus.isSelected()) {
+                g.setColor(new Color(0, 254, 255, 183));
+                g.fillPolygon(xValues, yValues, 4);
+                g.setColor(new Color(10, 145, 130));
+            }*/
             g.drawPolygon(xValues, yValues, 4);
+
         } else { // price ceiling and no pf/pc are drawn the same
-            int[] xValues = new int[]{leftBound, leftBound, xLimit};
-            int[] yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit};
+            xValues = new int[]{leftBound, leftBound, xLimit};
+            yValues = new int[]{WINDOW_HEIGHT - s.getYValue(leftBound), WINDOW_HEIGHT - yLimit, WINDOW_HEIGHT - yLimit};
+            /*if (showSolidSurplus.isSelected()) {
+                g.setColor(new Color(95, 216, 255, 255));
+                g.fillPolygon(xValues, yValues, 3);
+                g.setColor(new Color(10, 145, 130));
+            }*/
             g.drawPolygon(xValues, yValues, 3);
         }
 
@@ -238,6 +258,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
 
         double supplySlope = s.getM();
         int increment = 20;
+
 
         while (currentX < xLimit || currentY < yLimit) { //drawing diagonal lines
             double intersectionX = (supplySlope * s.getX() - s.getY() - lineSlope * currentX + currentY) / (supplySlope - lineSlope);
@@ -257,6 +278,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
                 currentY = yLimit;
             }
         }
+
 
         if (showPriceFloor.isSelected()) {
             if (s.getM() > 0 || priceFloor > s.getY1()) { //or statement: if s is horizontal but there is still surplus
@@ -447,10 +469,16 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     }
 
     public void calculatePriceFloor() {
-        if (priceFloor < equilibriumY) {
+        if (priceFloor < equilibriumY) { //price floor can't go below equilibrium
             priceFloor = equilibriumY;
-        } else if (priceFloor > d.getY1()) {
+        }/* else if (priceFloor > d.getY1()) {
             priceFloor = d.getY1();
+        } */
+        if (priceFloor > d.getY1()) { //pricefloor can't go above demand
+            priceFloor = d.getY1();
+        }
+        if (priceFloor > s.getY2()) { //pricefloor can't go above supply
+            priceFloor = s.getY2();
         }
         if (s.getYValue(d.getXValue(priceFloor)) < BORDER_OFFSET) {
             priceFloor = d.getYValue(s.getXValue(BORDER_OFFSET));
@@ -459,10 +487,13 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     public void calculatePriceCeiling() {
         if (priceCeiling > equilibriumY) {
             priceCeiling = equilibriumY;
-        } else if (priceCeiling < s.getY1()) {
+        }
+        if (priceCeiling < s.getY1()) {
             priceCeiling = s.getY1();
         }
-
+        if (priceCeiling < d.getY2()) {
+            priceCeiling = d.getY2();
+        }
         //if the price ceiling-supply intersection up to demand is above the upper border
         if (d.getYValue(s.getXValue(priceCeiling)) > WINDOW_HEIGHT - BORDER_OFFSET) {
             priceCeiling = s.getYValue(d.getXValue(WINDOW_HEIGHT - BORDER_OFFSET));
@@ -482,13 +513,28 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         }
 
         int currentY = BORDER_OFFSET;
-        while (currentY + increment <= priceFloor) { //line down to x axis
+        while (currentY + increment <= priceFloor) { //line down to x axis (from demand)
             int start = currentY + increment / 4;
             int end = currentY + 3 * increment / 4;
             g.drawLine(d.getXValue(priceFloor), WINDOW_HEIGHT - start, d.getXValue(priceFloor), WINDOW_HEIGHT - end);
+            g.drawLine(s.getXValue(priceFloor), WINDOW_HEIGHT - start, s.getXValue(priceFloor), WINDOW_HEIGHT - end);
+
             currentY += increment;
         }
-        g.drawString("Qf", d.getXValue(priceFloor) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+        g.drawString("Qd", d.getXValue(priceFloor) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+        g.drawString("Qs", s.getXValue(priceFloor) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+        //drawing the potential surplus level
+        int demandXValue = d.getXValue(priceFloor);
+        if (demandXValue < equilibriumX) { //if the price floor doesn't intersect at equilibrium
+            g.setColor(new Color(255, 0, 0));
+            int labelYValue = BORDER_OFFSET - 19;
+            int supplyXValue = s.getXValue(priceFloor);
+            int midpoint = (demandXValue + supplyXValue) / 2;
+            for (int i = 1; i <= 3; i++) {
+                g.drawLine(demandXValue, WINDOW_HEIGHT - (labelYValue + i), supplyXValue, WINDOW_HEIGHT - (labelYValue + i));
+            }
+            g.drawString("Surplus", midpoint - 26, WINDOW_HEIGHT - (labelYValue - 12));
+        }
 
 
         g.setColor(Color.BLACK);
@@ -512,9 +558,23 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
             int start = currentY + increment / 4;
             int end = currentY + 3 * increment / 4;
             g.drawLine(s.getXValue(priceCeiling), WINDOW_HEIGHT - start, s.getXValue(priceCeiling), WINDOW_HEIGHT - end);
+            g.drawLine(d.getXValue(priceCeiling), WINDOW_HEIGHT - start, d.getXValue(priceCeiling), WINDOW_HEIGHT - end);
             currentY += increment;
         }
-        g.drawString("Qc", s.getXValue(priceCeiling) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+        g.drawString("Qs", s.getXValue(priceCeiling) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+        g.drawString("Qd", d.getXValue(priceCeiling) - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+
+        int supplyXValue = s.getXValue(priceCeiling);
+        if (supplyXValue < equilibriumX) { //if the price ceiling doesn't intersect at equilibrium
+            g.setColor(new Color(255, 0, 0));
+            int labelYValue = BORDER_OFFSET - 19;
+            int demandXValue = d.getXValue(priceCeiling);
+            int midpoint = (supplyXValue + demandXValue) / 2;
+            for (int i = 1; i <= 3; i++) {
+                g.drawLine(supplyXValue, WINDOW_HEIGHT - (labelYValue + i), demandXValue, WINDOW_HEIGHT - (labelYValue + i));
+            }
+            g.drawString("Shortage", midpoint - 28, WINDOW_HEIGHT - (labelYValue - 12));
+        }
 
 
         g.setColor(Color.BLACK);
