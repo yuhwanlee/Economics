@@ -21,6 +21,13 @@ public class DemandCurve {
         y2 = BORDER_OFFSET;
     }
 
+    public DemandCurve(int x1, int y1, int x2, int y2) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+
     public int getX1() {
         return x1;
     }
@@ -65,9 +72,7 @@ public class DemandCurve {
     }
 
     public void shiftCurve(int x, int y) {
-        if (intersectsSupply(x, y)) {
-            setPointsInput(x, y);
-        }
+        setPointsInput(x, y);
     }
     public void rotateCurve(int x, int y) {
         //checks if cursor is within 2nd or 4th quadrant
@@ -115,10 +120,5 @@ public class DemandCurve {
                 y2 = (int) (m * (outerBorder - x) + y);
             }
         }
-    }
-    public boolean intersectsSupply(int x, int y) {
-        double supplySlope = SupplyAndDemand.s.getM();
-        int intersectionX = (int) ((m * x - y - supplySlope * SupplyAndDemand.s.getX() + SupplyAndDemand.s.getY()) / (m - supplySlope));
-        return BORDER_OFFSET <= intersectionX && intersectionX <= WINDOW_WIDTH - BORDER_OFFSET;
     }
 }

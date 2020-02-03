@@ -25,7 +25,7 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
     ButtonGroup curves;
     ButtonGroup modes;
 
-    JLabel extrasLabel;
+    JLabel featuresLabel;
     JCheckBox surplusCheckBox;
     JCheckBox DWLCheckBox;
     JCheckBox showPriceFloor;
@@ -102,8 +102,8 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
 
         c.gridx = 2;
         c.gridy = 0;
-        extrasLabel = new JLabel("Extras:");
-        this.add(extrasLabel, c);
+        featuresLabel = new JLabel("Features:");
+        this.add(featuresLabel, c);
 
         c.gridy = 1;
         surplusCheckBox = new JCheckBox("Surplus");
@@ -156,11 +156,15 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
         //supply curve
         g.setColor(Color.CYAN);
         g.drawLine(s.getX1(), WINDOW_HEIGHT - s.getY1(), s.getX2(), WINDOW_HEIGHT - s.getY2());
-        g.drawString("S", s.getX2() + 5, WINDOW_HEIGHT - (s.getY2() + 5));
+        g.drawString("S", s.getX2() + 5, WINDOW_HEIGHT - (s.getY2() - 5));
         //demand curve
         g.setColor(Color.RED);
         g.drawLine(d.getX1(), WINDOW_HEIGHT - d.getY1(), d.getX2(), WINDOW_HEIGHT - d.getY2());
-        g.drawString("D", d.getX2() + 5, WINDOW_HEIGHT - (d.getY2() + 5));
+        if (d.getY2() == BORDER_OFFSET) { //if the D label would be intersected by the axis, but it directly below
+            g.drawString("D", d.getX2() - 5, WINDOW_HEIGHT - (BORDER_OFFSET - 15));
+        } else { //otherwise, put it on the side
+            g.drawString("D", d.getX2() + 5, WINDOW_HEIGHT - (d.getY2() - 5));
+        }
 
         g.setColor(Color.BLACK);
     }
@@ -703,9 +707,13 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
             y = WINDOW_HEIGHT - y;
             if (shiftButton.isSelected()) {
                 if (supplyButton.isSelected()) {
-                    s.shiftCurve(x, y);
+                    if (supplyIntersectsDemand(x, y)) {
+                        s.shiftCurve(x, y);
+                    }
                 } else if (demandButton.isSelected()) {
-                    d.shiftCurve(x, y);
+                    if (demandIntersectsSupply(x, y)) {
+                        d.shiftCurve(x, y);
+                    }
                 } else if (priceFloorButton.isSelected()) {
                     priceFloor = y;
                 } else if (priceCeilingButton.isSelected()) {
@@ -725,4 +733,17 @@ public class SupplyAndDemand extends JPanel implements MouseListener, MouseMotio
             demo.repaint();
         }
     }
+
+    public boolean supplyIntersectsDemand(int x, int y) { //if the potential shift in supply will intersect with demand curve
+        double demandSlope = d.getM();
+        int intersectionX = (int) ((s.getM() * x - y - demandSlope * d.getX() + d.getY()) / (s.getM() - demandSlope));
+        return BORDER_OFFSET <= intersectionX && intersectionX <= WINDOW_WIDTH - BORDER_OFFSET;
+    }
+
+    public boolean demandIntersectsSupply(int x, int y) {
+        double supplySlope = SupplyAndDemand.s.getM();
+        int intersectionX = (int) ((d.getM() * x - y - supplySlope * s.getX() + s.getY()) / (d.getM() - supplySlope));
+        return BORDER_OFFSET <= intersectionX && intersectionX <= WINDOW_WIDTH - BORDER_OFFSET;
+    }
+
 }

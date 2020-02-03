@@ -21,6 +21,13 @@ public class SupplyCurve {
         y2 = WINDOW_HEIGHT - BORDER_OFFSET;
     }
 
+    public SupplyCurve(int x1, int y1, int x2, int y2) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+
     public int getX1() {
         return x1;
     }
@@ -65,9 +72,7 @@ public class SupplyCurve {
 
     public void shiftCurve(int x, int y) {
         //m = (double) (y2 - y1) / (x2 - x1);
-        if (intersectsDemand(x, y)) {
-            setPointsInput(x, y);
-        }
+        setPointsInput(x, y);
     }
     public void rotateCurve(int x, int y) {
         //checks if cursor is within 1st or 3rd quadrant
@@ -113,10 +118,5 @@ public class SupplyCurve {
                 y2 = (int) (m * (outerBorder - x) + y);
             }
         }
-    }
-    public boolean intersectsDemand(int x, int y) {
-        double demandSlope = SupplyAndDemand.d.getM();
-        int intersectionX = (int) ((m * x - y - demandSlope * SupplyAndDemand.d.getX() + SupplyAndDemand.d.getY()) / (m - demandSlope));
-        return BORDER_OFFSET <= intersectionX && intersectionX <= WINDOW_WIDTH - BORDER_OFFSET;
     }
 }
